@@ -27,6 +27,7 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: write  # required by actions/checkout and tag cleanup on failure
+      packages: write  # the NuGet push to the owner's GitHub Packages feed uses this job's token
       checks: write    # required by dorny/test-reporter
     steps:
       # ---------------------------
