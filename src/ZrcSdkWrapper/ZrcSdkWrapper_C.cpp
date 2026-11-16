@@ -544,6 +544,56 @@ public:
     void OnUpdateSIPServiceStatusNotification(const SIPService& service) override;
 };
 
+// ─── ISettingServiceSink — statistics only (Room PC CPU and memory) ────────────────────
+// Every other settings notification is ignored, as before this sink existed: volume and camera
+// selection stay host-driven (read on connect / after set).
+class ZrcSettingServiceSink : public ISettingServiceSink
+{
+public:
+    ZrcSdkInstance* owner;
+    explicit ZrcSettingServiceSink(ZrcSdkInstance* inst) : owner(inst) {}
+    void OnMicrophoneListChanged(const std::vector<Device>& microphones) override {}
+    void OnSpeakerListChanged(const std::vector<Device>& speakers) override {}
+    void OnCameraListChanged(const std::vector<Device>& cameras) override {}
+    void OnUpdateCOMList(const std::vector<Device>& comList) override {}
+    void OnCompanionZRDeviceUpdateNotification(const CompanionZRDeviceUpdateNot& noti) override {}
+    void OnCurrentMicrophoneChanged(bool exist, const Device& microphone) override {}
+    void OnCurrentSpeakerChanged(bool exist, const Device& speaker) override {}
+    void OnCurrentCameraChanged(bool exist, const Device& camera) override {}
+    void OnCurrentMicrophoneVolumeChanged(float volume) override {}
+    void OnCurrentSpeakerVolumeChanged(float volume) override {}
+    void OnUpdateHardwareStatus(const HardwareStatus& status) override {}
+    void OnUpdatedGenericSettings(const GenericSettings& genericSettings) override {}
+    void OnUpdateVoiceCommandStatus(const VoiceCommandStatus& status) override {}
+    void OnUpdateRoomProfileList(const RoomProfileList& list) override {}
+    void OnUpdateZoomRoomCapability(const RoomCapability& roomCapability) override {}
+    void OnCurrentSelectedMicrophoneMuted(bool muted) override {}
+    void OnMicrophoneTestingNotification(int32_t volume) override {}
+    void OnMicrophoneRecordingNotification(MicRecordTestStatus status) override {}
+    void OnSpeakerTestingNotification(int32_t volume, bool isEnabled) override {}
+    void OnSpeakerTestingResult(int32_t result, float duration, bool isStopped) override {}
+    void OnStatisticalInfoNotification(const StatisticalInfo& info) override;
+    void OnAudioCheckupNotification(const AudioCheckupInfo& info) override {}
+    void OnAudioSystemFailureNotification(bool isDismiss) override {}
+    void OnScreenInfosNotification(const ScreenInfos& screenInfos) override {}
+    void OnAdjustScreensResponse(const AdjustScreensRes& response) override {}
+    void OnZoomPresenceScreenSaverNotification(bool running) override {}
+    void OnUpdatedOperationTimeStatusNotification(bool shouldDimScreen) override {}
+    void OnDirectorCalibrationNotification(const DirectorCalibrationNot& noti) override {}
+    void OnIntelligentDirectorInfoNotification(const IntelligentDirectorInfo& info) override {}
+    void OnCameraBoundaryConfigurationInfoNotification(const CameraBoundaryConfigurationInfo& info) override {}
+    void OnUpdateDiagnosticInfo(const DiagnosticInfo& info) override {}
+    void OnChangeWindowsPasswordNotification(int32_t result) override {}
+    void OnUpdateNetworkAudioDeviceList(const std::string& virtualDeviceID, NetworkAudioDeviceListAction action, const std::vector<NetworkAudioDevice>& networkAudioDeviceList, bool isUsedDanteController) override {}
+    void OnListAudioChannelAndCameraBindInfoNotification(const std::vector<AudioChannelAndCameraBindInfo>& bindInfoList) override {}
+    void OnBindAudioChannelAndCameraNotification(const std::vector<AudioChannelAndCameraBindInfo>& bindInfoList) override {}
+    void OnUnbindAudioChannelAndCameraNotification(const std::vector<AudioChannelAndCameraBindInfo>& bindInfoList) override {}
+    void OnUnbindAllAudioChannelAndCameraConnectionsNotification(const std::vector<AudioChannelAndCameraBindInfo>& bindInfoList) override {}
+    void OnNetworkAdapterUpdateInfo(const std::vector<NetworkAdapterInfo>& networkAdapterInfos) override {}
+    void OnUpdateMicStethoscopeModeEnabledStatus(bool isMicStethoscopeModeEnabled) override {}
+    void OnUpdateSystemAudioEnhancementsMode(SystemAudioEnhancementsMode mode) override {}
+};
+
 #pragma GCC diagnostic pop
 
 // ─── ZrcSdkInstance — holds all SDK state ────────────────────────────────────
@@ -558,6 +608,7 @@ struct ZrcSdkInstance
     IPreMeetingService*         pPreMeetingService;
     ZrcPreMeetingServiceSink*   pPreMeetingServiceSink;
     ISettingService*            pSettingService;
+    ZrcSettingServiceSink*      pSettingServiceSink;
     IMeetingService*            pMeetingService;
     ZrcMeetingServiceSink*      pMeetingServiceSink;
     ZrcMeetingAudioHelperSink*      pAudioHelperSink;
@@ -616,6 +667,7 @@ struct ZrcSdkInstance
     SdkEventCallback hostChangedCallback;           void* hostChangedUserData;
     SdkEventCallback recordingStatusCallback;       void* recordingStatusUserData;
     ZrcMeetingRecordingInfoCallback meetingRecordingInfoCallback; void* meetingRecordingInfoUserData;
+    ZrcStatisticalInfoCallback statisticalInfoCallback; void* statisticalInfoUserData;
     ZrcCameraPresetInfoCallback cameraPresetInfoCallback; void* cameraPresetInfoUserData;
     SdkEventCallback controlSystemEnabledCallback;  void* controlSystemEnabledUserData;
     ZrcParticipantListCallback participantListCallback; void* participantListUserData;
@@ -679,6 +731,7 @@ struct ZrcSdkInstance
         , pZoomRoomsService(nullptr), pZoomRoomsServiceSink(nullptr)
         , pPreMeetingService(nullptr), pPreMeetingServiceSink(nullptr)
         , pSettingService(nullptr)
+        , pSettingServiceSink(nullptr)
         , pMeetingService(nullptr), pMeetingServiceSink(nullptr)
         , pAudioHelperSink(nullptr), pVideoHelperSink(nullptr), pShareHelperSink(nullptr)
         , pViewLayoutHelperSink(nullptr), pMeetingControlHelperSink(nullptr)
@@ -709,6 +762,7 @@ struct ZrcSdkInstance
         , hostChangedCallback(nullptr), hostChangedUserData(nullptr)
         , recordingStatusCallback(nullptr), recordingStatusUserData(nullptr)
         , meetingRecordingInfoCallback(nullptr), meetingRecordingInfoUserData(nullptr)
+        , statisticalInfoCallback(nullptr), statisticalInfoUserData(nullptr)
         , cameraPresetInfoCallback(nullptr), cameraPresetInfoUserData(nullptr)
         , controlSystemEnabledCallback(nullptr), controlSystemEnabledUserData(nullptr)
         , participantListCallback(nullptr), participantListUserData(nullptr)
@@ -769,6 +823,7 @@ struct ZrcSdkInstance
     void RaiseHostChangedEvent(int amIHost)                       { Raise(hostChangedCallback, hostChangedUserData, "", amIHost); }
     void RaiseRecordingStatusEvent(int isRecording)               { Raise(recordingStatusCallback, recordingStatusUserData, "", isRecording); }
     void RaiseMeetingRecordingInfoEvent(const ZrcMeetingRecordingInfo* s) { if (meetingRecordingInfoCallback) meetingRecordingInfoCallback(s, meetingRecordingInfoUserData); }
+    void RaiseStatisticalInfoEvent(const ZrcStatisticalInfo* s)   { if (statisticalInfoCallback) statisticalInfoCallback(s, statisticalInfoUserData); }
     void RaiseCameraPresetInfoEvent(const ZrcCameraPresetInfo* s) { if (cameraPresetInfoCallback) cameraPresetInfoCallback(s, cameraPresetInfoUserData); }
     void RaiseControlSystemEnabledEvent(int enabled)              { Raise(controlSystemEnabledCallback, controlSystemEnabledUserData, "", enabled); }
     // Extended raise helpers
@@ -1230,6 +1285,21 @@ void ZrcParticipantHelperSink::OnUserUpdate(const std::vector<MeetingParticipant
 void ZrcParticipantHelperSink::OnHostChangedNotification(int32_t /*hostUserID*/, bool amIHost, ConfSessionType session)
 {
     if (owner && session == CurrentSession) owner->RaiseHostChangedEvent(amIHost ? 1 : 0);
+}
+
+void ZrcSettingServiceSink::OnStatisticalInfoNotification(const StatisticalInfo& info)
+{
+    if (!owner) return;
+    const StatisticalOverallInfo& o = info.overallInfo;
+    ZrcStatisticalInfo s;
+    s.cpuCoreNumber      = o.cpuCoreNumber;
+    s.cpuFrequency       = o.cpuFrequency;
+    s.cpuZRUsage         = o.cpuZRUsage;
+    s.cpuOverallUsage    = o.cpuOverallUsage;
+    s.memorySize         = o.memorySize;
+    s.memoryZRUsage      = o.memoryZRUsage;
+    s.memoryOverallUsage = o.memoryOverallUsage;
+    owner->RaiseStatisticalInfoEvent(&s);
 }
 
 void ZrcRecordingHelperSink::OnUpdateMeetingRecordingInfo(const MeetingRecordingInfo& recordingInfo)
@@ -1936,6 +2006,7 @@ static void FreeInstance(ZrcSdkInstance* inst)
     delete inst->pAudioHelperSink;
     delete inst->pMeetingServiceSink;
     delete inst->pPreMeetingServiceSink;
+    delete inst->pSettingServiceSink;
     delete inst->pZoomRoomsServiceSink;
     delete inst;
 }
@@ -2087,6 +2158,13 @@ ZRCSDKWRAPPER_API int ZRCSDKWRAPPER_CALL ZrcSdk_InitializeRoom(ZrcSdkHandle hand
         // registered: ISettingServiceSink has ~40 callbacks, so volume and camera-selection feedback
         // are driven by the host (read on connect / after set), not by SDK push notifications.
         inst->pSettingService = inst->pZoomRoomsService->GetSettingService();
+        // Its sink carries only the statistics notification (Room PC CPU and memory, sent once
+        // ZrcSdk_EnableStatisticalInfo turns it on); every other settings callback is a no-op.
+        if (inst->pSettingService)
+        {
+            inst->pSettingServiceSink = new ZrcSettingServiceSink(inst);
+            inst->pSettingService->RegisterSink(inst->pSettingServiceSink);
+        }
 
         inst->pPreMeetingService = inst->pZoomRoomsService->GetPreMeetingService();
         if (inst->pPreMeetingService)
@@ -3197,6 +3275,17 @@ ZRCSDKWRAPPER_API int ZRCSDKWRAPPER_CALL ZrcSdk_SetSpeakerVolume(ZrcSdkHandle ha
     return (int)inst->pSettingService->SetSpeakerVolume(volume);
 }
 
+// Turns the Zoom Room's statistics notification on or off. While on, the room sends its statistics
+// (the Room PC's CPU and memory use among them) to the statistical info callback.
+ZRCSDKWRAPPER_API int ZRCSDKWRAPPER_CALL ZrcSdk_EnableStatisticalInfo(ZrcSdkHandle handle, int32_t enable)
+{
+    if (!handle) return -1;
+    ZrcSdkInstance* inst = (ZrcSdkInstance*)handle;
+    if (!inst->bInitialized) { inst->RaiseErrorEvent("SDK not initialized", -1); return -1; }
+    if (!inst->pSettingService) { inst->RaiseErrorEvent("Setting Service not available", -1); return -1; }
+    return (int)inst->pSettingService->EnableStatisticalInfo(enable != 0);
+}
+
 ZRCSDKWRAPPER_API int ZRCSDKWRAPPER_CALL ZrcSdk_GetMicrophoneVolume(ZrcSdkHandle handle, float* outVolume)
 {
     if (!handle || !outVolume) return -1;
@@ -4268,6 +4357,8 @@ ZRCSDKWRAPPER_API void ZRCSDKWRAPPER_CALL ZrcSdk_SetRecordingStatusCallback(ZrcS
     { SET_CB(recordingStatus, callback, userData); }
 ZRCSDKWRAPPER_API void ZRCSDKWRAPPER_CALL ZrcSdk_SetMeetingRecordingInfoCallback(ZrcSdkHandle handle, ZrcMeetingRecordingInfoCallback callback, void* userData)
     { SET_CB(meetingRecordingInfo, callback, userData); }
+ZRCSDKWRAPPER_API void ZRCSDKWRAPPER_CALL ZrcSdk_SetStatisticalInfoCallback(ZrcSdkHandle handle, ZrcStatisticalInfoCallback callback, void* userData)
+    { SET_CB(statisticalInfo, callback, userData); }
 ZRCSDKWRAPPER_API void ZRCSDKWRAPPER_CALL ZrcSdk_SetCameraPresetInfoCallback(ZrcSdkHandle handle, ZrcCameraPresetInfoCallback callback, void* userData)
     { SET_CB(cameraPresetInfo, callback, userData); }
 ZRCSDKWRAPPER_API void ZRCSDKWRAPPER_CALL ZrcSdk_SetControlSystemEnabledCallback(ZrcSdkHandle handle, SdkEventCallback callback, void* userData)

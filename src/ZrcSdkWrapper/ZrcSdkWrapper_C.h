@@ -275,6 +275,20 @@ typedef struct ZrcMeetingRecordingInfo {
 
 typedef void (ZRCSDKWRAPPER_CALL *ZrcMeetingRecordingInfoCallback)(const ZrcMeetingRecordingInfo* info, void* userData);
 
+// ── Statistics flat struct (ISettingService StatisticalInfo.overallInfo) ──────────────────
+// Sent while ZrcSdk_EnableStatisticalInfo is on. Figures are as the SDK reports them.
+typedef struct ZrcStatisticalInfo {
+    int32_t cpuCoreNumber;       // CPU cores in the Room PC
+    float   cpuFrequency;        // CPU frequency
+    int32_t cpuZRUsage;          // CPU used by the Zoom Rooms app
+    int32_t cpuOverallUsage;     // CPU used by the whole Room PC
+    int32_t memorySize;          // memory size
+    int32_t memoryZRUsage;       // memory used by the Zoom Rooms app
+    int32_t memoryOverallUsage;  // memory used by the whole Room PC
+} ZrcStatisticalInfo;
+
+typedef void (ZRCSDKWRAPPER_CALL *ZrcStatisticalInfoCallback)(const ZrcStatisticalInfo* info, void* userData);
+
 // ── Camera preset flat struct (max 3 slots; ZRC SDK preset index range is [0,1,2]) ────
 typedef struct ZrcCameraPreset {
     int32_t index;        // preset slot index (0..2)
@@ -524,6 +538,8 @@ ZRCSDKWRAPPER_API int ZRCSDKWRAPPER_CALL ZrcSdk_SetSpeakerVolume(ZrcSdkHandle ha
 // Room microphone (audio input) volume, same float scale as the speaker volume.
 ZRCSDKWRAPPER_API int ZRCSDKWRAPPER_CALL ZrcSdk_GetMicrophoneVolume(ZrcSdkHandle handle, float* outVolume);
 ZRCSDKWRAPPER_API int ZRCSDKWRAPPER_CALL ZrcSdk_SetMicrophoneVolume(ZrcSdkHandle handle, float volume);
+// Room PC statistics (CPU and memory use) on or off; while on they arrive on the statistical info callback.
+ZRCSDKWRAPPER_API int ZRCSDKWRAPPER_CALL ZrcSdk_EnableStatisticalInfo(ZrcSdkHandle handle, int32_t enable);
 
 // ── Layout extensions ─────────────────────────────────────────────────────────
 ZRCSDKWRAPPER_API int ZRCSDKWRAPPER_CALL ZrcSdk_SetScreenLayout(ZrcSdkHandle handle, int32_t screen, int32_t layoutSourceType);
@@ -753,6 +769,7 @@ ZRCSDKWRAPPER_API void ZRCSDKWRAPPER_CALL ZrcSdk_SetHostChangedCallback(ZrcSdkHa
 // errorCode=1 if meeting is being recorded
 ZRCSDKWRAPPER_API void ZRCSDKWRAPPER_CALL ZrcSdk_SetRecordingStatusCallback(ZrcSdkHandle handle, SdkEventCallback callback, void* userData);
 ZRCSDKWRAPPER_API void ZRCSDKWRAPPER_CALL ZrcSdk_SetMeetingRecordingInfoCallback(ZrcSdkHandle handle, ZrcMeetingRecordingInfoCallback callback, void* userData);
+ZRCSDKWRAPPER_API void ZRCSDKWRAPPER_CALL ZrcSdk_SetStatisticalInfoCallback(ZrcSdkHandle handle, ZrcStatisticalInfoCallback callback, void* userData);
 ZRCSDKWRAPPER_API void ZRCSDKWRAPPER_CALL ZrcSdk_SetCameraPresetInfoCallback(ZrcSdkHandle handle, ZrcCameraPresetInfoCallback callback, void* userData);
 // errorCode=1 if ZRCS enabled
 ZRCSDKWRAPPER_API void ZRCSDKWRAPPER_CALL ZrcSdk_SetControlSystemEnabledCallback(ZrcSdkHandle handle, SdkEventCallback callback, void* userData);
