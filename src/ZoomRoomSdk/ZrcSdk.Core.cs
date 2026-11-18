@@ -270,6 +270,10 @@ public partial class ZrcSdk : IDisposable
     private static extern int ZrcSdk_GetActiveRoomCount();
     [DllImport(DllName, CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Ansi)]
     private static extern int ZrcSdk_GetSDKVersion(IntPtr handle, StringBuilder buffer, int bufferSize);
+    [DllImport(DllName, CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Ansi)]
+    private static extern int ZrcSdk_GetLastZoomRoomInfo(IntPtr handle,
+        StringBuilder roomName, int roomNameSize, StringBuilder displayName, int displayNameSize,
+        StringBuilder roomAddress, int roomAddressSize);
 
     // Pairing
     [DllImport(DllName, CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Ansi)]
@@ -583,6 +587,22 @@ public partial class ZrcSdk : IDisposable
         var buffer = new StringBuilder(256);
         ZrcSdk_GetSDKVersion(_handle, buffer, buffer.Capacity);
         return buffer.ToString();
+    }
+
+    /// <summary>
+    /// The paired Zoom Room's name, display name and IP address, as the Zoom Room reports them (ZRC SDK
+    /// GetLastZoomRoomInfo). Null when the SDK isn't paired or doesn't answer. Each field is null when the Zoom Room
+    /// sends it blank. Call it outside an SDK callback: the SDK refuses calls made from inside one.
+    /// </summary>
+    public PairedRoomInfo? GetLastZoomRoomInfo()
+    {
+        ThrowIfDisposed();
+        var name = new StringBuilder(256);
+        var display = new StringBuilder(256);
+        var address = new StringBuilder(64);
+        if (ZrcSdk_GetLastZoomRoomInfo(_handle, name, name.Capacity, display, display.Capacity, address, address.Capacity) != 0)
+            return null;
+        return PairedRoomInfo.From(name.ToString(), display.ToString(), address.ToString());
     }
 
     private void OnInitializedCallback(string message, int errorCode, IntPtr userData) =>

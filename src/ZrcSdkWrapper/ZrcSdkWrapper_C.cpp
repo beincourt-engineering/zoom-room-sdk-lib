@@ -2431,6 +2431,35 @@ ZRCSDKWRAPPER_API int ZRCSDKWRAPPER_CALL ZrcSdk_GetSDKVersion(ZrcSdkHandle handl
     }
 }
 
+static void CopyOut(const std::string& value, char* buffer, int bufferSize)
+{
+    if (!buffer || bufferSize <= 0) return;
+    strncpy(buffer, value.c_str(), bufferSize - 1);
+    buffer[bufferSize - 1] = '\0';
+}
+
+ZRCSDKWRAPPER_API int ZRCSDKWRAPPER_CALL ZrcSdk_GetLastZoomRoomInfo(ZrcSdkHandle handle,
+    char* roomName, int roomNameSize, char* displayName, int displayNameSize, char* roomAddress, int roomAddressSize)
+{
+    CopyOut(std::string(), roomName, roomNameSize);
+    CopyOut(std::string(), displayName, displayNameSize);
+    CopyOut(std::string(), roomAddress, roomAddressSize);
+    if (!handle) return -1;
+    ZrcSdkInstance* inst = (ZrcSdkInstance*)handle;
+    if (!inst->pNativeSDK || !inst->bInitialized || !inst->pZoomRoomsService) return -1;
+    try
+    {
+        ZoomRoomInfo info;
+        ZRCSDKError err = inst->pZoomRoomsService->GetLastZoomRoomInfo(info);
+        if (err != ZRCSDKERR_SUCCESS) return (int)err;
+        CopyOut(info.roomName, roomName, roomNameSize);
+        CopyOut(info.displayName, displayName, displayNameSize);
+        CopyOut(info.roomAddress, roomAddress, roomAddressSize);
+        return 0;
+    }
+    catch (...) { return -1; }
+}
+
 // ─── Room Pairing ─────────────────────────────────────────────────────────────
 
 ZRCSDKWRAPPER_API int ZRCSDKWRAPPER_CALL ZrcSdk_PairRoomWithActivationCode(ZrcSdkHandle handle, const char* activationCode)

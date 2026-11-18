@@ -449,6 +449,11 @@ ZRCSDKWRAPPER_API int          ZRCSDKWRAPPER_CALL ZrcSdk_GetActiveRoomCount();
 // ── SDK Information ───────────────────────────────────────────────────────────
 ZRCSDKWRAPPER_API int ZRCSDKWRAPPER_CALL ZrcSdk_GetSDKVersion(ZrcSdkHandle handle, char* buffer, int bufferSize);
 
+/// The paired Zoom Room's name, display name and IP address (IZoomRoomsService::GetLastZoomRoomInfo).
+/// Each buffer gets an empty string when the SDK has none. Returns 0, or the SDK's error.
+ZRCSDKWRAPPER_API int ZRCSDKWRAPPER_CALL ZrcSdk_GetLastZoomRoomInfo(ZrcSdkHandle handle,
+    char* roomName, int roomNameSize, char* displayName, int displayNameSize, char* roomAddress, int roomAddressSize);
+
 // ── Room Pairing ──────────────────────────────────────────────────────────────
 ZRCSDKWRAPPER_API int ZRCSDKWRAPPER_CALL ZrcSdk_PairRoomWithActivationCode(ZrcSdkHandle handle, const char* activationCode);
 // Returns 1 if stored credentials exist and RetryToPairRoom can be called, 0 otherwise
